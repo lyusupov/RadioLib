@@ -1411,7 +1411,7 @@ void LR11x0::setRfSwitchTable(const uint32_t (&pins)[Module::RFSWITCH_MAX_PINS],
       continue;
     }
 
-    // only keep DIO pins, there may be some GPIOs in the switch tabke
+    // only keep DIO pins, there may be some GPIOs in the switch table
     if(pins[i] & RFSWITCH_PIN_FLAG) {
       enable |= 1UL << RADIOLIB_LR11X0_DIOx_VAL(pins[i]);
     }
@@ -1441,6 +1441,16 @@ void LR11x0::setRfSwitchTable(const uint32_t (&pins)[Module::RFSWITCH_MAX_PINS],
 
   // set it
   this->setDioAsRfSwitch(enable, modes[0], modes[1], modes[2], modes[3], modes[4], modes[5], modes[6]);
+
+  // process GPIO entries the same way as Module.cpp does
+  memcpy(this->mod->rfSwitchPins, pins, sizeof(this->mod->rfSwitchPins));
+  this->mod->rfSwitchTable = table;
+  for(size_t i = 0; i < Module::RFSWITCH_MAX_PINS; i++) {
+    // only process modes for the GPIO pins, skip DIOx pins
+    if(!(pins[i] & RFSWITCH_PIN_FLAG)) {
+      this->mod->hal->pinMode(pins[i], this->mod->hal->GpioModeOutput);
+    }
+  }
 }
 
 int16_t LR11x0::forceLDRO(bool enable) {
